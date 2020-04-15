@@ -206,3 +206,5 @@ ENV/
 # Rope project settings
 .ropeproject
 opengl/01-window
+b
+build
