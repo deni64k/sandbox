@@ -24,20 +24,22 @@ auto aligned_unique_ptr(std::size_t size, std::align_val_t align) {
       reinterpret_cast<std::uint8_t*>(p), aligned_deleter{align});
 }
 
-#if defined(__clang__)
-# undef __GNUC__
+#if defined (_MSC_VER)
+# define assume_aligned(ptr, x) __assume(((char*)ptr - (char*)0) % x == 0);
+#else
+# define assume_aligned(ptr, x) ptr = reinterpret_cast<decltype(ptr)>(__builtin_assume_aligned(ptr, x));
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2,tree-vectorize")
 # pragma GCC target ("tune=native")
 #endif
 static void AutoVec(benchmark::State& state) {
+  auto const ncells = rows * cols;
+
   auto  pmat = std::make_unique<std::uint8_t[]>(rows * cols);
   auto* mat = pmat.get();
-
-  auto const ncells = rows * cols;
 
   {
     auto* ptr = mat;
@@ -57,105 +59,115 @@ static void AutoVec(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(AutoVec)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(AutoVec);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
+# pragma GCC push_options
+# pragma GCC optimize ("O2,tree-vectorize")
+# pragma GCC target ("tune=native")
+#endif
+static void AutoVecAligned16(benchmark::State& state) {
+  auto const ncells = rows * cols;
+
+  auto  pmat = aligned_unique_ptr(rows * cols, std::align_val_t{16});
+  auto* mat  = pmat.get();
+  assume_aligned(mat, 16);
+  
+  {
+    auto* ptr = mat;
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) = 0;
+    }
+  }
+
+  for (auto _ : state) {
+    auto* ptr = mat;
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) += 42;
+    }
+    
+    benchmark::DoNotOptimize(mat);
+    benchmark::ClobberMemory();
+  }
+}
+#if defined(__GNUC__) && !defined(__clang__)
+# pragma GCC pop_options
+#endif
+BENCHMARK(AutoVecAligned16);
+
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2,tree-vectorize")
 # pragma GCC target ("tune=native")
 #endif
 static void AutoVecAligned32(benchmark::State& state) {
-  auto const nrows = rows;
-  auto const ncols = cols;
+  auto const ncells = rows * cols;
 
   auto  pmat = aligned_unique_ptr(rows * cols, std::align_val_t{32});
   auto* mat  = pmat.get();
-#if defined (_MSC_VER)
-  __assume(((char*)pmat.get() - (char*)0) % 32 == 0);
-#else
-  mat = reinterpret_cast<decltype(pmat.get())>(__builtin_assume_aligned(pmat.get(), 32));
-#endif
+  assume_aligned(mat, 32);
   
   {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *(ptr++) = 0;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) = 0;
     }
   }
 
   for (auto _ : state) {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *ptr += 42;
-        ++ptr;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) += 42;
     }
     
     benchmark::DoNotOptimize(mat);
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(AutoVecAligned32)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(AutoVecAligned32);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2,tree-vectorize")
 # pragma GCC target("tune=native")
 #endif
 static void AutoVecAligned64(benchmark::State& state) {
-  auto const nrows = rows;
-  auto const ncols = cols;
+  auto const ncells = rows * cols;
 
   auto pmat = aligned_unique_ptr(rows * cols, std::align_val_t{64});
   auto* mat = pmat.get();
-#if defined(_MSC_VER)
-  __assume(((char*)pmat.get() - (char*)0) % 64 == 0);
-#else
-  mat = reinterpret_cast<decltype(pmat.get())>(__builtin_assume_aligned(pmat.get(), 64));
-#endif
+  assume_aligned(mat, 64);
   
   {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *(ptr++) = 0;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) = 0;
     }
   }
 
   for (auto _ : state) {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *ptr += 42;
-        ++ptr;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) += 42;
     }
     
     benchmark::DoNotOptimize(mat);
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(AutoVecAligned64)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(AutoVecAligned64);
 
 #if !defined(__clang__)
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,avx512f,avx512bw,tune=skylake-avx512")
@@ -207,14 +219,12 @@ static void ManualVecAVX512(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX512)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX512);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,avx512f,avx512bw,tune=skylake-avx512")
@@ -228,6 +238,7 @@ static void ManualVecAVX512Aligned(benchmark::State& state) {
 
   auto pmat = aligned_unique_ptr(rows * cols, std::align_val_t{64});
   auto* mat = pmat.get();
+  assume_aligned(mat, 64);
 
   __m512i zeros = _mm512_setzero_si512();
   __m512i const42 = _mm512_set1_epi8(42);
@@ -266,15 +277,13 @@ static void ManualVecAVX512Aligned(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX512Aligned)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX512Aligned);
 #endif  // !defined(__clang__)
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,avx2,tune=skylake")
@@ -320,14 +329,12 @@ static void ManualVecAVX2(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX2)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX2);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,avx,avx2,tune=skylake")
@@ -338,6 +345,7 @@ static void ManualVecAVX2Aligned(benchmark::State& state) {
 
   auto pmat = aligned_unique_ptr(rows * cols, std::align_val_t{32});
   auto* mat = pmat.get();
+  assume_aligned(mat, 32);
 
   constexpr int nlanes = 32;
   auto const ncells = cols * rows;
@@ -373,14 +381,12 @@ static void ManualVecAVX2Aligned(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX2Aligned)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX2Aligned);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,tune=skylake")
@@ -426,14 +432,12 @@ static void ManualVecSSE(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecSSE)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecSSE);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("sse,sse2,sse3,ssse3,sse4,popcnt,abm,mmx,tune=skylake")
@@ -444,6 +448,7 @@ static void ManualVecSSEAligned(benchmark::State& state) {
 
   auto pmat = aligned_unique_ptr(rows * cols, std::align_val_t{16});
   auto* mat = pmat.get();
+  assume_aligned(mat, 16);
 
   constexpr int nlanes = 16;
   auto const ncells = cols * rows;
@@ -479,15 +484,13 @@ static void ManualVecSSEAligned(benchmark::State& state) {
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecSSEAligned)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecSSEAligned);
 
 #if !defined(_MSC_VER)
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 # pragma GCC target ("mmx,tune=skylake")
@@ -533,88 +536,75 @@ static void ManualVecMMX(benchmark::State& state) {
 
   _mm_empty();
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecMMX)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecMMX);
 #endif
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 #endif
 static void NoVec(benchmark::State& state) {
+  auto const ncells = rows * cols;
+
   auto  pmat = std::make_unique<std::uint8_t[]>(rows * cols);
   auto* mat = pmat.get();
 
   {
     auto* ptr = mat;
-    for (int r = 0; r < rows; ++r) {
-      for (int c = 0; c < cols; ++c) {
-        *(ptr++) = 0;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) = 0;
     }
   }
 
-  auto const nrows = rows;
-  auto const ncols = cols;
   for (auto _ : state) {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *ptr += 42;
-        ++ptr;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) += 42;
     }
 
     benchmark::DoNotOptimize(mat);
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(NoVec)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(NoVec);
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC push_options
 # pragma GCC optimize ("O2")
 #endif
 static void NoVecAligned32(benchmark::State& state) {
+  auto const ncells = rows * cols;
+
   auto pmat = aligned_unique_ptr(rows * cols, std::align_val_t{32});
   auto* mat = pmat.get();
+  assume_aligned(mat, 32);
 
   {
     auto* ptr = mat;
-    for (int r = 0; r < rows; ++r) {
-      for (int c = 0; c < cols; ++c) {
-        *(ptr++) = 0;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) = 0;
     }
   }
 
-  auto const nrows = rows;
-  auto const ncols = cols;
   for (auto _ : state) {
     auto* ptr = mat;
-    for (int r = 0; r < nrows; ++r) {
-      for (int c = 0; c < ncols; ++c) {
-        *ptr += 42;
-        ++ptr;
-      }
+    for (int i = 0; i < ncells; ++i) {
+      *(ptr++) += 42;
     }
 
     benchmark::DoNotOptimize(mat);
     benchmark::ClobberMemory();
   }
 }
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(NoVecAligned32)
-    ->MeasureProcessCPUTime()
-    ->Unit(benchmark::kNanosecond);
+BENCHMARK(NoVecAligned32);
 
 BENCHMARK_MAIN();
