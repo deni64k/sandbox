@@ -10,8 +10,8 @@
 // Good clear numbers:
 // http://quick-bench.com/fve5Wt5DvuB8PQRZ7JT-xAG2_H0
 
-auto  rows = 480;
-auto  cols = 640;
+auto  rows = 1080;
+auto  cols = 1280;
 
 struct aligned_deleter {
   std::align_val_t align;
@@ -104,7 +104,9 @@ static void AutoVecAligned32(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(AutoVecAligned32)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(AutoVecAligned32)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -148,7 +150,9 @@ static void AutoVecAligned64(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(AutoVecAligned64)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(AutoVecAligned64)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if !defined(__clang__)
 #if defined(__GNUC__)
@@ -200,13 +204,15 @@ static void ManualVecAVX512(benchmark::State& state) {
     }
 
     benchmark::DoNotOptimize(mat);
-    benchmark::DoNotOptimize(ptr);
+    benchmark::ClobberMemory();
   }
 }
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX512)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX512)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -257,13 +263,15 @@ static void ManualVecAVX512Aligned(benchmark::State& state) {
     }
 
     benchmark::DoNotOptimize(mat);
-    benchmark::DoNotOptimize(ptr);
+    benchmark::ClobberMemory();
   }
 }
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX512Aligned)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX512Aligned)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 #endif  // !defined(__clang__)
 
 #if defined(__GNUC__)
@@ -315,7 +323,9 @@ static void ManualVecAVX2(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX2)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX2)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -366,7 +376,9 @@ static void ManualVecAVX2Aligned(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecAVX2Aligned)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecAVX2Aligned)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -417,7 +429,9 @@ static void ManualVecSSE(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecSSE)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecSSE)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -468,7 +482,9 @@ static void ManualVecSSEAligned(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(ManualVecSSEAligned)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(ManualVecSSEAligned)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if !defined(_MSC_VER)
 #if defined(__GNUC__)
@@ -558,7 +574,9 @@ static void NoVec(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(NoVec)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(NoVec)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 #if defined(__GNUC__)
 # pragma GCC push_options
@@ -595,6 +613,8 @@ static void NoVecAligned32(benchmark::State& state) {
 #if defined(__GNUC__)
 # pragma GCC pop_options
 #endif
-BENCHMARK(NoVecAligned32)->MeasureProcessCPUTime()->Unit(benchmark::kNanosecond);
+BENCHMARK(NoVecAligned32)
+    ->MeasureProcessCPUTime()
+    ->Unit(benchmark::kNanosecond);
 
 BENCHMARK_MAIN();
